@@ -2,11 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const morgan = require('morgan');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
 const dotenv = require('dotenv');
 
-// Načtení proměnných prostředí z .env souboru
 dotenv.config();
 
 const app = express();
@@ -14,28 +11,14 @@ const PORT = process.env.PORT || 3000;
 const OPENAI_API_BASE_URL = process.env.OPENAI_API_BASE_URL || 'https://api.openai.com';
 const LOG_REQUESTS = process.env.LOG_REQUESTS === 'true';
 
-// Vytvoření složky pro logy, pokud neexistuje
-const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
-}
-
-// Middleware pro parsování JSON
+// Middleware
 app.use(express.json({ limit: '50mb' }));
-
-// Middleware pro CORS
 app.use(cors());
-
-// Middleware pro základní logování HTTP requestů
 app.use(morgan('combined'));
 
-// Funkce pro logování requestů do souboru
+// Modified logging function for Vercel
 const logRequest = (req, data) => {
   if (!LOG_REQUESTS) return;
-  
-  const timestamp = new Date().toISOString().replace(/:/g, '-');
-  const logFileName = `${timestamp}-request.json`;
-  const logFilePath = path.join(logsDir, logFileName);
   
   const logData = {
     timestamp: new Date().toISOString(),
@@ -46,8 +29,7 @@ const logRequest = (req, data) => {
     response: data
   };
   
-  fs.writeFileSync(logFilePath, JSON.stringify(logData, null, 2));
-  console.log(`Request logged to ${logFileName}`);
+  console.log('Request Log:', JSON.stringify(logData));
 };
 
 // Proxy middleware pro OpenAI API
@@ -136,3 +118,6 @@ app.listen(PORT, () => {
   console.log(`Logování requestů: ${LOG_REQUESTS ? 'zapnuto' : 'vypnuto'}`);
   console.log(`OpenAI API Base URL: ${OPENAI_API_BASE_URL}`);
 });
+
+// Export the app for Vercel
+module.exports = app;
